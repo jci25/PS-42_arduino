@@ -150,39 +150,14 @@ Serial.print("WaterTemp : ");
     totalMilliLitres += flowMilliLitres;
       
     unsigned int frac;
-    //Serial.println("*********************************************");
-    // Print the flow rate for this second in litres / minute
-   // Serial.print("Flow rate: ");
-   // Serial.print(int(flowRate));  // Print the integer part of the variable
-   // Serial.print(".");             // Print the decimal point
-    // Determine the fractional part. The 10 multiplier gives us 1 decimal place.
+   
     frac = (flowRate - int(flowRate)) * 10;
-   // Serial.print(frac, DEC) ;      // Print the fractional part of the variable
-   // Serial.print("L/min");
-    // Print the number of litres flowed in this second
-    //Serial.print("  Current Liquid Flowing: ");             // Output separator
-    //Serial.print(flowMilliLitres);
-    //Serial.print("mL/Sec");
-
-    // Print the cumulative total of litres flowed since starting
-    //Serial.print("  Output Liquid Quantity: ");             // Output separator
-  //  Serial.print(totalMilliLitres);
-    //Serial.println("mL"); 
     float inch3 = flowMilliLitres*0.0610237441; //1 mL = 0.06 cubic inches
-   // Serial.print("in^3/sec = ");
-    Serial.print(inch3);
     float speed = inch3 / 0.15033011721; //in^3 / sec divided by area = pi*(3.5/16 in)^2
-    Serial.print(" ");
-    //Serial.print("Speed in/sec: ");
+    Serial.print(", Inches : ");
     Serial.print(speed);
-   // Serial.println("in/sec");
     
-   // Serial.print("time (s) = "); Serial.print(millis() - oldTime); Serial.print("  ");
-    //Serial.print(time);
-   // Serial.print("inches = ");
-   //Serial.println( (time)*speed);
-   // Serial.println("*********************************************");
-    // Reset the pulse counter so we can start incrementing again
+     // Reset the pulse counter so we can start incrementing again
     pulseCount = 0;
     
     // Enable the interrupt again now that we've finished sending output
