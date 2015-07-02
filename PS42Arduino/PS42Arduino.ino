@@ -86,38 +86,79 @@ void setup(void)
  
 void loop(void)
 {
- // To measure to higher degrees of precision use the following sensor settings:
-  // ADC_256 
-  // ADC_512 
-  // ADC_1024
-  // ADC_2048
-  // ADC_4096
-  // call sensors.requestTemperatures() to issue a global temperature
-  // request to all devices on the bus
-  //Serial.print(" Requesting temperatures...");
- // sensors.requestTemperatures(); // Send the command to get temperatures
- // Serial.println("DONE");
- // Read temperature from the sensor in deg F. Converting
-  // to Fahrenheit is not internal to the sensor.
-  // Additional math is done to convert a Celsius reading.
-  temperature_f = sensor.getTemperature(FAHRENHEIT, ADC_512);
+ 
+ 
+ 
+ 
+ //flowMeter Start
+ 
+  if((millis() - oldTime) > 1000)    // Only process counters once per second
+  { 
+    // To measure to higher degrees of precision use the following sensor settings:
+    // ADC_256 
+    // ADC_512 
+    // ADC_1024
+    // ADC_2048
+    // ADC_4096
+    // Read temperature from the sensor in deg F. Converting
+    // to Fahrenheit is not internal to the sensor.
+    // Additional math is done to convert a Celsius reading.
+    temperature_f = sensor.getTemperature(FAHRENHEIT, ADC_512);
+    
+    // Read pressure from the sensor in mbar.
+    pressure_abs = sensor.getPressure(ADC_2048);
+    depth1 = depth(pressure_baseline, pressure_abs);
+    
+    // Disable the interrupt while calculating flow rate and sending the value to
+    // the host
+    detachInterrupt(sensorInterrupt);
+        
+    // Because this loop may not complete in exactly 1 second intervals we calculate
+    // the number of milliseconds that have passed since the last execution and use
+    // that to scale the output. We also apply the calibrationFactor to scale the output
+    // based on the number of pulses per second per units of measure (litres/minute in
+    // this case) coming from the sensor.
+    flowRate = ((1000.0 / (millis() - oldTime)) * pulseCount) / calibrationFactor;
+    float time = millis() - oldTime; 
+    // Note the time this processing pass was executed. Note that because we've
+    // disabled interrupts the millis() function won't actually be incrementing right
+    // at this point, but it will still return the value it was set to just before
+    // interrupts went away.
+    oldTime = millis();
+    
+    // Divide the flow rate in litres/minute by 60 to determine how many litres have
+    // passed through the sensor in this 1 second interval, then multiply by 1000 to
+    // convert to millilitres.
+    flowMilliLitres = (flowRate / 60) * 1000;
+    
+    // Add the millilitres passed in this second to the cumulative total
+    totalMilliLitres += flowMilliLitres;
+      
+    unsigned int frac;
+   
+    frac = (flowRate - int(flowRate)) * 10;
+    float inch3 = flowMilliLitres*0.0610237441; //1 mL = 0.06 cubic inches
+    float speed = inch3 / 0.15033011721; //in^3 / sec divided by area = pi*(3.5/16 in)^2
+    
+    Serial.print("WaterTemp : ");
+    Serial.print(temperature_f); 
   
-  // Read pressure from the sensor in mbar.
-  pressure_abs = sensor.getPressure(ADC_2048);
-  depth1 = depth(pressure_baseline, pressure_abs);
-Serial.print("WaterTemp : ");
- // Serial.print("Temperature for Device 1 is: ");
-  Serial.print(temperature_f); 
-
-  Serial.print(", Depth : ");
-  Serial.print(depth1);
-    // You can have more than one IC on the same bus. 
-    // 0 refers to the first IC on the wire
-  Serial.print(", Humidity : ");
-  Serial.print((float)dht.readHumidity(), 2);
-
-  Serial.print(", HullTemp : ");
-  Serial.println((float)dht.readTemperature(true), 2);
+    Serial.print(", Depth : ");
+    Serial.print(depth1);
+    Serial.print(", Humidity : ");
+    Serial.print((float)dht.readHumidity(), 2);
+  
+    Serial.print(", HullTemp : ");
+    Serial.print((float)dht.readTemperature(true), 2);
+    Serial.print(", Inches : ");
+    Serial.println(speed);
+    
+     // Reset the pulse counter so we can start incrementing again
+    pulseCount = 0;
+    
+    // Enable the interrupt again now that we've finished sending output
+    attachInterrupt(sensorInterrupt, pulseCounter, FALLING);
+  }
  
  
  //flowMeter Start
